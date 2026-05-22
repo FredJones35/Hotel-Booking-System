@@ -8,6 +8,64 @@ A Hotels.com-like hotel booking system built as a microservices architecture.
 
 ## Architecture
 
+```mermaid
+graph TB
+    subgraph Clients
+        A[👤 Admin Client<br/>React Frontend]
+        U[👤 User Client<br/>React Frontend]
+    end
+
+    subgraph AWS S3
+        FE[React App<br/>S3 Static Hosting]
+    end
+
+    subgraph IAM
+        COG[AWS Cognito<br/>User Pool<br/>ADMIN / USER groups]
+    end
+
+    subgraph EC2 - Docker Compose
+        GW[API Gateway<br/>Spring Cloud Gateway<br/>:8080]
+        HS[Hotel Service<br/>Spring Boot<br/>:8081]
+        NS[Notification Service<br/>Spring Boot<br/>:8082]
+        AI[AI Agent Service<br/>Node.js / TypeScript<br/>:3000]
+    end
+
+    subgraph AWS App Runner
+        CS[Comments Service<br/>Spring Boot]
+    end
+
+    subgraph Databases
+        RDS[(RDS PostgreSQL<br/>hotels / rooms / bookings)]
+        REDIS[(ElastiCache Redis<br/>Hotel Cache TTL 30min)]
+        MONGO[(MongoDB Atlas<br/>comments)]
+    end
+
+    subgraph Messaging
+        SQS[AWS SQS<br/>hotel-new-reservations]
+    end
+
+    subgraph AI
+        CLAUDE[Anthropic Claude API<br/>claude-sonnet-4]
+    end
+
+    A & U --> FE
+    FE --> COG
+    FE --> GW
+    GW --> HS
+    GW --> CS
+    GW --> NS
+    GW --> AI
+    HS --> RDS
+    HS --> REDIS
+    HS --> SQS
+    SQS --> NS
+    CS --> MONGO
+    AI --> CLAUDE
+    AI --> HS
+```
+
+### Text Overview
+
 ```
 [React Frontend (S3/CloudFront)]
            |

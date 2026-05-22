@@ -4,7 +4,7 @@ import { authService } from '../services/auth';
 
 export default function LoginPage() {
   const [mode, setMode] = useState<'login' | 'register'>('login');
-  const [form, setForm] = useState({ username: '', password: '', email: '' });
+  const [form, setForm] = useState({ email: '', password: '', confirmPassword: '' });
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
   const navigate = useNavigate();
@@ -12,14 +12,21 @@ export default function LoginPage() {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setError('');
+
+    if (mode === 'register' && form.password !== form.confirmPassword) {
+      setError('Passwords do not match.');
+      return;
+    }
+
     setLoading(true);
     try {
       if (mode === 'login') {
-        await authService.signIn(form.username, form.password);
+        await authService.signIn(form.email, form.password);
         navigate('/');
       } else {
-        await authService.signUp(form.username, form.password, form.email);
-        setError('Account created! Please check your email for verification, then sign in.');
+        // Cognito User Pool uses email as username
+        await authService.signUp(form.email, form.password, form.email);
+        setError('Account created! Please check your email for a verification code, then sign in.');
         setMode('login');
       }
     } catch (err: unknown) {
@@ -36,33 +43,22 @@ export default function LoginPage() {
           {mode === 'login' ? 'Sign In' : 'Create Account'}
         </h2>
         {error && (
-          <div className="mb-4 p-3 bg-red-50 border border-red-200 text-red-700 rounded-lg text-sm">
+          <div className={`mb-4 p-3 border rounded-lg text-sm ${error.includes('created') ? 'bg-green-50 border-green-200 text-green-700' : 'bg-red-50 border-red-200 text-red-700'}`}>
             {error}
           </div>
         )}
         <form onSubmit={handleSubmit} className="space-y-4">
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">Username</label>
+            <label className="block text-sm font-medium text-gray-700 mb-1">Email</label>
             <input
-              type="text"
-              value={form.username}
-              onChange={e => setForm({ ...form, username: e.target.value })}
+              type="email"
+              value={form.email}
+              onChange={e => setForm({ ...form, email: e.target.value })}
+              placeholder="you@example.com"
               required
               className="w-full border border-gray-300 rounded-lg px-4 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500"
             />
           </div>
-          {mode === 'register' && (
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">Email</label>
-              <input
-                type="email"
-                value={form.email}
-                onChange={e => setForm({ ...form, email: e.target.value })}
-                required
-                className="w-full border border-gray-300 rounded-lg px-4 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500"
-              />
-            </div>
-          )}
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-1">Password</label>
             <input
@@ -73,6 +69,18 @@ export default function LoginPage() {
               className="w-full border border-gray-300 rounded-lg px-4 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500"
             />
           </div>
+          {mode === 'register' && (
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1">Confirm Password</label>
+              <input
+                type="password"
+                value={form.confirmPassword}
+                onChange={e => setForm({ ...form, confirmPassword: e.target.value })}
+                required
+                className="w-full border border-gray-300 rounded-lg px-4 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500"
+              />
+            </div>
+          )}
           <button
             type="submit"
             disabled={loading}
@@ -84,7 +92,7 @@ export default function LoginPage() {
         <p className="mt-4 text-center text-sm text-gray-600">
           {mode === 'login' ? "Don't have an account? " : 'Already have an account? '}
           <button
-            onClick={() => setMode(mode === 'login' ? 'register' : 'login')}
+            onClick={() => { setMode(mode === 'login' ? 'register' : 'login'); setError(''); }}
             className="text-blue-600 font-medium hover:underline"
           >
             {mode === 'login' ? 'Register' : 'Sign In'}
