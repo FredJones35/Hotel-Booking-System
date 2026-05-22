@@ -51,7 +51,7 @@ services:
     ports:
       - "8082:8081"
     environment:
-      SPRING_DATA_MONGODB_URI: ${SPRING_DATA_MONGODB_URI:-mongodb+srv://user1:21e03k05@project-cluster.jcoamfv.mongodb.net/commentsdb?appName=project-cluster}
+      SPRING_DATA_MONGODB_URI: ${SPRING_DATA_MONGODB_URI:?SPRING_DATA_MONGODB_URI is required}
       AWS_COGNITO_ISSUER_URI: ${AWS_COGNITO_ISSUER_URI:-https://cognito-idp.eu-central-1.amazonaws.com/placeholder}
       AWS_REGION: ${AWS_REGION:-eu-central-1}
 

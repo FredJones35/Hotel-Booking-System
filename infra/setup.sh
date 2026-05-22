@@ -327,7 +327,7 @@ log "  hotel-service URL: $HOTEL_SERVICE_URL"
 
 # comments-service
 COMMENTS_ENV="{
-    \"SPRING_DATA_MONGODB_URI\": \"mongodb+srv://user1:21e03k05@project-cluster.jcoamfv.mongodb.net/commentsdb?appName=project-cluster\",
+    \"SPRING_DATA_MONGODB_URI\": \"${SPRING_DATA_MONGODB_URI:?Error: SPRING_DATA_MONGODB_URI environment variable is not set}\",
     \"AWS_COGNITO_ISSUER_URI\": \"$COGNITO_ISSUER_URI\",
     \"AWS_REGION\": \"$REGION\"
 }"
