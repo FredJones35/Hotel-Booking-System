@@ -58,6 +58,14 @@ export default function HotelDetail() {
   const [bookingMsg, setBookingMsg] = useState('');
   const [isAuth, setIsAuth] = useState(false);
 
+  const [commentForm, setCommentForm] = useState({
+    userName: '', overallRating: 8, comment: '', stayDuration: '',
+    cleanliness: 8, staffAndService: 8, facilitiesAndAmenities: 8,
+    locationAndAccessibility: 8, ecoFriendliness: 8,
+  });
+  const [commentLoading, setCommentLoading] = useState(false);
+  const [commentMsg, setCommentMsg] = useState('');
+
   useEffect(() => {
     authService.isAuthenticated().then(setIsAuth);
     const load = async () => {
@@ -100,6 +108,45 @@ export default function HotelDetail() {
       setBookingMsg(msg);
     } finally {
       setBookingLoading(false);
+    }
+  };
+
+  const handleSubmitComment = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!isAuth) { navigate('/login'); return; }
+    if (!commentForm.userName.trim()) { setCommentMsg('Please enter your name.'); return; }
+    setCommentLoading(true);
+    setCommentMsg('');
+    try {
+      await hotelApi.addComment({
+        hotelId: id!,
+        userName: commentForm.userName,
+        overallRating: commentForm.overallRating,
+        comment: commentForm.comment,
+        stayDuration: commentForm.stayDuration,
+        categoryRatings: {
+          cleanliness: commentForm.cleanliness,
+          staffAndService: commentForm.staffAndService,
+          facilitiesAndAmenities: commentForm.facilitiesAndAmenities,
+          locationAndAccessibility: commentForm.locationAndAccessibility,
+          ecoFriendliness: commentForm.ecoFriendliness,
+        },
+      });
+      setCommentMsg('Thank you! Your review has been submitted.');
+      setCommentForm({ userName: '', overallRating: 8, comment: '', stayDuration: '',
+        cleanliness: 8, staffAndService: 8, facilitiesAndAmenities: 8,
+        locationAndAccessibility: 8, ecoFriendliness: 8 });
+      // Refresh comments and stats
+      const [fresh, freshStats] = await Promise.all([
+        hotelApi.getComments(id!, 0, 5),
+        hotelApi.getCommentStats(id!),
+      ]);
+      setComments(fresh.data.data || []);
+      setStats(freshStats.data);
+    } catch {
+      setCommentMsg('Failed to submit review. Please try again.');
+    } finally {
+      setCommentLoading(false);
     }
   };
 
@@ -214,7 +261,7 @@ export default function HotelDetail() {
           <div className="mt-8">
             <h3 className="text-xl font-bold text-gray-900 mb-4">Guest Comments</h3>
             {comments.length === 0 ? (
-              <p className="text-gray-500">No comments yet.</p>
+              <p className="text-gray-500">No comments yet. Be the first to review!</p>
             ) : (
               <div className="space-y-4">
                 {comments.map(c => (
@@ -231,6 +278,97 @@ export default function HotelDetail() {
                 ))}
               </div>
             )}
+
+            {/* Leave a review */}
+            <div className="mt-8 border rounded-xl p-6 bg-gray-50">
+              <h4 className="text-lg font-bold text-gray-900 mb-4">Leave a Review</h4>
+              {!isAuth ? (
+                <p className="text-gray-500 text-sm">
+                  <button onClick={() => navigate('/login')} className="text-blue-600 font-medium hover:underline">Sign in</button> to leave a review.
+                </p>
+              ) : (
+                <form onSubmit={handleSubmitComment} className="space-y-4">
+                  {commentMsg && (
+                    <div className={`p-3 rounded-lg text-sm ${commentMsg.includes('Thank') ? 'bg-green-50 text-green-700' : 'bg-red-50 text-red-700'}`}>
+                      {commentMsg}
+                    </div>
+                  )}
+                  <div className="grid grid-cols-2 gap-4">
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-1">Your Name *</label>
+                      <input
+                        type="text" required
+                        value={commentForm.userName}
+                        onChange={e => setCommentForm({ ...commentForm, userName: e.target.value })}
+                        placeholder="e.g. John Smith"
+                        className="w-full border rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+                      />
+                    </div>
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-1">Stay Duration</label>
+                      <input
+                        type="text"
+                        value={commentForm.stayDuration}
+                        onChange={e => setCommentForm({ ...commentForm, stayDuration: e.target.value })}
+                        placeholder="e.g. 3 nights"
+                        className="w-full border rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+                      />
+                    </div>
+                  </div>
+
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">
+                      Overall Rating: <span className="text-blue-600 font-bold">{commentForm.overallRating}/10</span>
+                    </label>
+                    <input type="range" min={1} max={10} step={0.5}
+                      value={commentForm.overallRating}
+                      onChange={e => setCommentForm({ ...commentForm, overallRating: Number(e.target.value) })}
+                      className="w-full accent-blue-600"
+                    />
+                  </div>
+
+                  <div className="grid grid-cols-2 gap-x-6 gap-y-2">
+                    {([
+                      ['cleanliness', 'Cleanliness'],
+                      ['staffAndService', 'Staff & Service'],
+                      ['facilitiesAndAmenities', 'Facilities'],
+                      ['locationAndAccessibility', 'Location'],
+                      ['ecoFriendliness', 'Eco-Friendly'],
+                    ] as [keyof typeof commentForm, string][]).map(([key, label]) => (
+                      <div key={key}>
+                        <label className="block text-xs text-gray-600 mb-0.5">
+                          {label}: <span className="font-semibold">{commentForm[key]}</span>
+                        </label>
+                        <input type="range" min={1} max={10} step={0.5}
+                          value={commentForm[key] as number}
+                          onChange={e => setCommentForm({ ...commentForm, [key]: Number(e.target.value) })}
+                          className="w-full accent-blue-600"
+                        />
+                      </div>
+                    ))}
+                  </div>
+
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">Your Comment</label>
+                    <textarea
+                      rows={3}
+                      value={commentForm.comment}
+                      onChange={e => setCommentForm({ ...commentForm, comment: e.target.value })}
+                      placeholder="Share your experience..."
+                      className="w-full border rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+                    />
+                  </div>
+
+                  <button
+                    type="submit"
+                    disabled={commentLoading}
+                    className="w-full bg-blue-600 hover:bg-blue-700 disabled:bg-blue-300 text-white font-semibold py-2 rounded-lg transition-colors"
+                  >
+                    {commentLoading ? 'Submitting...' : 'Submit Review'}
+                  </button>
+                </form>
+              )}
+            </div>
           </div>
         </div>
 
