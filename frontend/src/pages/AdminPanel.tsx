@@ -1,8 +1,12 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { hotelApi } from '../services/api';
+import { fetchAuthSession } from 'aws-amplify/auth';
 
 export default function AdminPanel() {
+  const navigate = useNavigate();
   const [tab, setTab] = useState<'hotel' | 'room'>('hotel');
+  const [authorized, setAuthorized] = useState<boolean | null>(null);
   const [hotelForm, setHotelForm] = useState({
     name: '', destination: '', address: '',
     latitude: '', longitude: '', starRating: 5,
@@ -14,6 +18,23 @@ export default function AdminPanel() {
   });
   const [msg, setMsg] = useState('');
   const [loading, setLoading] = useState(false);
+
+  useEffect(() => {
+    fetchAuthSession()
+      .then(session => {
+        const groups = (session.tokens?.idToken?.payload?.['cognito:groups'] as string[]) || [];
+        if (groups.includes('ADMIN')) {
+          setAuthorized(true);
+        } else {
+          setAuthorized(false);
+          navigate('/');
+        }
+      })
+      .catch(() => { setAuthorized(false); navigate('/'); });
+  }, [navigate]);
+
+  if (authorized === null) return <div className="flex justify-center p-20 text-gray-500">Checking permissions...</div>;
+  if (!authorized) return null;
 
   const handleCreateHotel = async (e: React.FormEvent) => {
     e.preventDefault();

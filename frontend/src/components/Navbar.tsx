@@ -1,20 +1,28 @@
 import { useEffect, useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { authService } from '../services/auth';
+import { fetchAuthSession } from 'aws-amplify/auth';
 
 export default function Navbar() {
   const [user, setUser] = useState<string | null>(null);
+  const [isAdmin, setIsAdmin] = useState(false);
   const navigate = useNavigate();
 
   useEffect(() => {
     authService.getCurrentUser()
-      .then(u => setUser(u.username))
-      .catch(() => setUser(null));
+      .then(async u => {
+        setUser(u.username);
+        const session = await fetchAuthSession();
+        const groups = (session.tokens?.idToken?.payload?.['cognito:groups'] as string[]) || [];
+        setIsAdmin(groups.includes('ADMIN'));
+      })
+      .catch(() => { setUser(null); setIsAdmin(false); });
   }, []);
 
   const handleSignOut = async () => {
     await authService.signOut();
     setUser(null);
+    setIsAdmin(false);
     navigate('/');
   };
 
@@ -26,7 +34,9 @@ export default function Navbar() {
           {user ? (
             <>
               <Link to="/my-bookings" className="hover:text-blue-200 text-sm">My Bookings</Link>
-              <Link to="/admin" className="hover:text-blue-200 text-sm">Admin</Link>
+              {isAdmin && (
+                <Link to="/admin" className="hover:text-blue-200 text-sm">Admin</Link>
+              )}
               <span className="text-sm text-blue-200">{user}</span>
               <button
                 onClick={handleSignOut}

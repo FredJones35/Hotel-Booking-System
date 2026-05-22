@@ -2,6 +2,10 @@
 
 A Hotels.com-like hotel booking system built as a microservices architecture.
 
+## Demo Video
+
+[![Demo Video](https://img.youtube.com/vi/Aaq4rxtNWPE/0.jpg)](https://youtu.be/Aaq4rxtNWPE)
+
 ## Architecture
 
 ```
