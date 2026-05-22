@@ -39,6 +39,13 @@ export const hotelApi = {
 
   getById: (id: number) => api.get(`/api/v1/hotels/${id}`),
 
+  getRooms: (id: number, checkIn?: string, checkOut?: string, guests?: number) => {
+    const params: Record<string, string | number> = { guests: guests ?? 1 };
+    if (checkIn) params.checkIn = checkIn;
+    if (checkOut) params.checkOut = checkOut;
+    return api.get(`/api/v1/hotels/${id}/rooms`, { params });
+  },
+
   createBooking: (body: {
     hotelId: number;
     roomId: number;

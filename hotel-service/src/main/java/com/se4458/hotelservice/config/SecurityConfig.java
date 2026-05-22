@@ -21,6 +21,7 @@ public class SecurityConfig {
             .csrf(csrf -> csrf.disable())
             .sessionManagement(s -> s.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
             .authorizeHttpRequests(auth -> auth
+                .requestMatchers(AntPathRequestMatcher.antMatcher(HttpMethod.OPTIONS, "/**")).permitAll()
                 .requestMatchers(AntPathRequestMatcher.antMatcher("/swagger-ui/**")).permitAll()
                 .requestMatchers(AntPathRequestMatcher.antMatcher("/v3/api-docs/**")).permitAll()
                 .requestMatchers(AntPathRequestMatcher.antMatcher("/actuator/**")).permitAll()

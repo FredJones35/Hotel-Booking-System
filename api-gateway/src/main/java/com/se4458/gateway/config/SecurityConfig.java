@@ -19,6 +19,7 @@ public class SecurityConfig {
         http
             .csrf(ServerHttpSecurity.CsrfSpec::disable)
             .authorizeExchange(exchanges -> exchanges
+                .pathMatchers(HttpMethod.OPTIONS, "/**").permitAll()
                 .pathMatchers("/actuator/**").permitAll()
                 .pathMatchers(HttpMethod.GET, "/api/v1/hotels/**").permitAll()
                 .pathMatchers(HttpMethod.GET, "/api/v1/comments/**").permitAll()

@@ -86,6 +86,15 @@ public class HotelService {
             .totalElements(p.getTotalElements()).totalPages(p.getTotalPages()).build();
     }
 
+    public List<RoomResponse> getRoomsForHotel(Long hotelId, java.time.LocalDate checkIn, java.time.LocalDate checkOut, int guests, boolean applyDiscount) {
+        if (checkIn != null && checkOut != null) {
+            return roomRepository.findAvailableRooms(hotelId, checkIn, checkOut, guests)
+                .stream().map(r -> toRoomResponse(r, applyDiscount)).collect(Collectors.toList());
+        }
+        return roomRepository.findByHotelId(hotelId)
+            .stream().map(r -> toRoomResponse(r, applyDiscount)).collect(Collectors.toList());
+    }
+
     public List<HotelResponse> getAllHotelsFlatList() {
         return hotelRepository.findAll().stream().map(this::toResponse).collect(Collectors.toList());
     }

@@ -41,9 +41,12 @@ export default function HotelDetail() {
   const [searchParams] = useSearchParams();
   const navigate = useNavigate();
 
-  const checkIn = searchParams.get('checkIn') || '';
-  const checkOut = searchParams.get('checkOut') || '';
-  const guests = Number(searchParams.get('guests')) || 1;
+  const today = new Date().toISOString().split('T')[0];
+  const tomorrow = new Date(Date.now() + 86400000).toISOString().split('T')[0];
+
+  const [checkIn, setCheckIn] = useState(searchParams.get('checkIn') || today);
+  const [checkOut, setCheckOut] = useState(searchParams.get('checkOut') || tomorrow);
+  const [guests, setGuests] = useState(Number(searchParams.get('guests')) || 1);
 
   const [hotel, setHotel] = useState<Hotel | null>(null);
   const [rooms, setRooms] = useState<Room[]>([]);
@@ -59,12 +62,14 @@ export default function HotelDetail() {
     authService.isAuthenticated().then(setIsAuth);
     const load = async () => {
       try {
-        const [hotelRes, commentsRes, statsRes] = await Promise.all([
+        const [hotelRes, roomsRes, commentsRes, statsRes] = await Promise.all([
           hotelApi.getById(Number(id)),
+          hotelApi.getRooms(Number(id), checkIn || undefined, checkOut || undefined, guests || 1),
           hotelApi.getComments(id!, 0, 5),
           hotelApi.getCommentStats(id!),
         ]);
         setHotel(hotelRes.data);
+        setRooms(roomsRes.data || []);
         setComments(commentsRes.data.data || []);
         setStats(statsRes.data);
       } catch {
@@ -128,13 +133,36 @@ export default function HotelDetail() {
 
           <div className="mt-8">
             <h3 className="text-xl font-bold text-gray-900 mb-4">Available Rooms</h3>
+
+            {/* Date / guest picker */}
+            <div className="flex flex-wrap gap-3 mb-4 p-4 bg-gray-50 rounded-xl border">
+              <div>
+                <label className="block text-xs text-gray-500 mb-1">Check-in</label>
+                <input type="date" value={checkIn} min={today}
+                  onChange={e => setCheckIn(e.target.value)}
+                  className="border rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500" />
+              </div>
+              <div>
+                <label className="block text-xs text-gray-500 mb-1">Check-out</label>
+                <input type="date" value={checkOut} min={checkIn}
+                  onChange={e => setCheckOut(e.target.value)}
+                  className="border rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500" />
+              </div>
+              <div>
+                <label className="block text-xs text-gray-500 mb-1">Guests</label>
+                <input type="number" min={1} max={10} value={guests}
+                  onChange={e => setGuests(Number(e.target.value))}
+                  className="border rounded-lg px-3 py-2 text-sm w-20 focus:outline-none focus:ring-2 focus:ring-blue-500" />
+              </div>
+            </div>
+
             {bookingMsg && (
               <div className={`mb-4 p-3 rounded-lg text-sm ${bookingMsg.includes('confirmed') ? 'bg-green-50 text-green-700' : 'bg-red-50 text-red-700'}`}>
                 {bookingMsg}
               </div>
             )}
             {rooms.length === 0 ? (
-              <p className="text-gray-500">No rooms returned. Search from the results page to see available rooms.</p>
+              <p className="text-gray-500">No rooms available for the selected dates.</p>
             ) : (
               <div className="space-y-4">
                 {rooms.map(room => (

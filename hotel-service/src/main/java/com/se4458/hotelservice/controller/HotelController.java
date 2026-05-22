@@ -2,6 +2,7 @@ package com.se4458.hotelservice.controller;
 
 import com.se4458.hotelservice.dto.response.HotelResponse;
 import com.se4458.hotelservice.dto.response.PageResponse;
+import com.se4458.hotelservice.dto.response.RoomResponse;
 import com.se4458.hotelservice.dto.response.SearchResultResponse;
 import com.se4458.hotelservice.service.HotelService;
 import com.se4458.hotelservice.service.SearchService;
@@ -14,6 +15,7 @@ import org.springframework.security.core.Authentication;
 import org.springframework.web.bind.annotation.*;
 
 import java.time.LocalDate;
+import java.util.List;
 
 @RestController
 @RequestMapping("/api/v1/hotels")
@@ -42,5 +44,17 @@ public class HotelController {
     @Operation(summary = "Get hotel detail (cached)")
     public ResponseEntity<HotelResponse> getHotel(@PathVariable Long hotelId) {
         return ResponseEntity.ok(hotelService.getHotelById(hotelId));
+    }
+
+    @GetMapping("/{hotelId}/rooms")
+    @Operation(summary = "Get rooms for a hotel. Pass checkIn/checkOut/guests to filter available rooms only.")
+    public ResponseEntity<List<RoomResponse>> getRooms(
+            @PathVariable Long hotelId,
+            @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate checkIn,
+            @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate checkOut,
+            @RequestParam(defaultValue = "1") int guests,
+            Authentication authentication) {
+        boolean isAuth = authentication != null && authentication.isAuthenticated();
+        return ResponseEntity.ok(hotelService.getRoomsForHotel(hotelId, checkIn, checkOut, guests, isAuth));
     }
 }
