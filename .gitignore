@@ -1,0 +1,39 @@
+# Claude Code
+.claude/
+
+# Maven
+*/target/
+*.jar
+*.war
+*.class
+
+# Node
+node_modules/
+dist/
+*.log
+
+# Environment / secrets
+.env
+.env.local
+infra/.env.generated
+infra/ec2-userdata.sh
+infra/seed.sql
+infra/seed_comments.py
+infra/debug.sh
+
+# IDE
+.idea/
+*.iml
+.vscode/
+*.suo
+*.user
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Docker
+*.dockerignore
+
+# Frontend build cache
+frontend/.vite/

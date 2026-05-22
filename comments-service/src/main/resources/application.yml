@@ -1,0 +1,20 @@
+server:
+  port: 8081
+
+spring:
+  application:
+    name: comments-service
+  data:
+    mongodb:
+      uri: ${SPRING_DATA_MONGODB_URI:mongodb+srv://user1:21e03k05@project-cluster.jcoamfv.mongodb.net/commentsdb?appName=project-cluster}
+  security:
+    oauth2:
+      resourceserver:
+        jwt:
+          issuer-uri: ${AWS_COGNITO_ISSUER_URI:https://cognito-idp.eu-central-1.amazonaws.com/placeholder}
+
+springdoc:
+  api-docs:
+    path: /v3/api-docs
+  swagger-ui:
+    path: /swagger-ui/index.html

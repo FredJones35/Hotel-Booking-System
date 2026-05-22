@@ -1,0 +1,57 @@
+server:
+  port: 8080
+
+spring:
+  application:
+    name: api-gateway
+  security:
+    oauth2:
+      resourceserver:
+        jwt:
+          issuer-uri: ${AWS_COGNITO_ISSUER_URI:https://cognito-idp.eu-central-1.amazonaws.com/placeholder}
+  cloud:
+    gateway:
+      globalcors:
+        corsConfigurations:
+          '[/**]':
+            allowedOriginPatterns: "*"
+            allowedMethods: "*"
+            allowedHeaders: "*"
+            allowCredentials: true
+      default-filters:
+        - DedupeResponseHeader=Access-Control-Allow-Credentials Access-Control-Allow-Origin
+      routes:
+        - id: hotel-service-admin
+          uri: ${HOTEL_SERVICE_URL:http://localhost:8081}
+          predicates:
+            - Path=/api/v1/admin/**
+        - id: hotel-service-bookings
+          uri: ${HOTEL_SERVICE_URL:http://localhost:8081}
+          predicates:
+            - Path=/api/v1/bookings/**
+        - id: hotel-service-internal
+          uri: ${HOTEL_SERVICE_URL:http://localhost:8081}
+          predicates:
+            - Path=/api/v1/internal/**
+        - id: hotel-service-hotels
+          uri: ${HOTEL_SERVICE_URL:http://localhost:8081}
+          predicates:
+            - Path=/api/v1/hotels/**
+        - id: ai-agent-service
+          uri: ${AI_AGENT_SERVICE_URL:http://localhost:3000}
+          predicates:
+            - Path=/api/v1/ai/**
+        - id: comments-service
+          uri: ${COMMENTS_SERVICE_URL:http://localhost:8082}
+          predicates:
+            - Path=/api/v1/comments/**
+        - id: notification-service
+          uri: ${NOTIFICATION_SERVICE_URL:http://localhost:8083}
+          predicates:
+            - Path=/api/v1/notifications/**
+
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health,info

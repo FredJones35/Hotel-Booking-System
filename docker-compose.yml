@@ -1,0 +1,108 @@
+version: '3.9'
+
+services:
+  postgres:
+    image: postgres:15-alpine
+    environment:
+      POSTGRES_DB: hoteldb
+      POSTGRES_USER: hoteluser
+      POSTGRES_PASSWORD: password
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U hoteluser -d hoteldb"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+
+  redis:
+    image: redis:7-alpine
+    ports:
+      - "6379:6379"
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+
+  hotel-service:
+    build: ./hotel-service
+    ports:
+      - "8081:8080"
+    environment:
+      SPRING_DATASOURCE_URL: jdbc:postgresql://postgres:5432/hoteldb
+      SPRING_DATASOURCE_USERNAME: hoteluser
+      SPRING_DATASOURCE_PASSWORD: password
+      SPRING_REDIS_HOST: redis
+      SPRING_REDIS_PORT: 6379
+      AWS_COGNITO_ISSUER_URI: ${AWS_COGNITO_ISSUER_URI:-https://cognito-idp.eu-central-1.amazonaws.com/placeholder}
+      AWS_REGION: ${AWS_REGION:-eu-central-1}
+      AWS_SQS_QUEUE_URL: ${AWS_SQS_QUEUE_URL:-}
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+
+  comments-service:
+    build: ./comments-service
+    ports:
+      - "8082:8081"
+    environment:
+      SPRING_DATA_MONGODB_URI: ${SPRING_DATA_MONGODB_URI:-mongodb+srv://user1:21e03k05@project-cluster.jcoamfv.mongodb.net/commentsdb?appName=project-cluster}
+      AWS_COGNITO_ISSUER_URI: ${AWS_COGNITO_ISSUER_URI:-https://cognito-idp.eu-central-1.amazonaws.com/placeholder}
+      AWS_REGION: ${AWS_REGION:-eu-central-1}
+
+  notification-service:
+    build: ./notification-service
+    ports:
+      - "8083:8082"
+    environment:
+      HOTEL_SERVICE_BASE_URL: http://hotel-service:8080
+      AWS_REGION: ${AWS_REGION:-eu-central-1}
+      AWS_SQS_QUEUE_URL: ${AWS_SQS_QUEUE_URL:-}
+      MAIL_HOST: ${MAIL_HOST:-smtp.gmail.com}
+      MAIL_PORT: ${MAIL_PORT:-587}
+      MAIL_USERNAME: ${MAIL_USERNAME:-}
+      MAIL_PASSWORD: ${MAIL_PASSWORD:-}
+    depends_on:
+      - hotel-service
+
+  ai-agent-service:
+    build: ./ai-agent-service
+    ports:
+      - "3000:3000"
+    environment:
+      PORT: 3000
+      ANTHROPIC_API_KEY: ${ANTHROPIC_API_KEY}
+      HOTEL_SERVICE_URL: http://hotel-service:8080
+      AWS_REGION: ${AWS_REGION:-eu-central-1}
+
+  api-gateway:
+    build: ./api-gateway
+    ports:
+      - "8080:8080"
+    environment:
+      HOTEL_SERVICE_URL: http://hotel-service:8080
+      AI_AGENT_SERVICE_URL: http://ai-agent-service:3000
+      COMMENTS_SERVICE_URL: http://comments-service:8081
+      NOTIFICATION_SERVICE_URL: http://notification-service:8082
+      AWS_COGNITO_ISSUER_URI: ${AWS_COGNITO_ISSUER_URI:-https://cognito-idp.eu-central-1.amazonaws.com/placeholder}
+      AWS_REGION: ${AWS_REGION:-eu-central-1}
+    depends_on:
+      - hotel-service
+      - comments-service
+      - notification-service
+      - ai-agent-service
+
+  frontend:
+    build: ./frontend
+    ports:
+      - "80:80"
+    depends_on:
+      - api-gateway
+
+volumes:
+  postgres_data:
